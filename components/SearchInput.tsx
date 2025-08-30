@@ -1,14 +1,21 @@
-import React, { useRef, useState } from "react";
 import {
-    FlatList,
-    Keyboard,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  clearSuggestions,
+  fetchSuggestionsRequest,
+} from "@/redux/slices/repoSlice";
+import { RootState } from "@/redux/store";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 interface SearchInputProps {
   onSearch: (query: string) => void;
@@ -23,6 +30,20 @@ export default function SearchInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
+  const dispatch = useDispatch();
+
+  const { suggestions, suggestionsLoading } = useSelector(
+    (state: RootState) => state.repos
+  );
+
+  useEffect(() => {
+    if (searchText.length >= 2 && showSuggestions) {
+      dispatch(fetchSuggestionsRequest(searchText));
+    } else if (searchText.length < 2) {
+      dispatch(clearSuggestions());
+    }
+  }, [searchText, showSuggestions, dispatch]);
+
   const handleTextChange = (text: string) => {
     setSearchText(text);
     setShowSuggestions(true);
@@ -32,6 +53,7 @@ export default function SearchInput({
     setSearchText(query);
     setShowSuggestions(false);
     onSearch(query);
+    dispatch(clearSuggestions());
     Keyboard.dismiss();
   };
 
@@ -46,7 +68,6 @@ export default function SearchInput({
   };
 
   const handleInputBlur = () => {
-    // Delay hiding suggestions to allow for suggestion clicks
     setTimeout(() => {
       setShowSuggestions(false);
     }, 150);
@@ -84,15 +105,24 @@ export default function SearchInput({
           />
         </View>
 
-        <View style={styles.suggestionsContainer}>
-          <FlatList
-            data={["suggest1,suggest2,suggest3"]}
-            renderItem={renderSuggestion}
-            keyExtractor={(item, index) => index?.toString()}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-          />
-        </View>
+        {showSuggestions && suggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            {suggestionsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#007AFF" />
+                <Text style={styles.loadingText}>Loading suggestions...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={suggestions}
+                renderItem={renderSuggestion}
+                keyExtractor={(item) => item}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+              />
+            )}
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );

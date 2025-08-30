@@ -1,17 +1,21 @@
+import { GithubUser } from "@/apis/github";
+import { clearUser } from "@/redux/slices/repoSlice";
+import { RootState } from "@/redux/store";
 import React, { useEffect } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    Image,
-    Linking,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 interface UserProfilePopupProps {
   visible: boolean;
@@ -26,6 +30,11 @@ export default function UserProfilePopup({
   onClose,
   username,
 }: UserProfilePopupProps) {
+  const dispatch = useDispatch();
+  const { selectedUser, userLoading, userError } = useSelector(
+    (state: RootState) => state.repos
+  );
+
   const [slideAnim] = React.useState(new Animated.Value(screenHeight));
 
   useEffect(() => {
@@ -45,11 +54,14 @@ export default function UserProfilePopup({
   }, [visible, slideAnim]);
 
   const handleClose = () => {
+    dispatch(clearUser());
     onClose();
   };
 
   const handleOpenProfile = () => {
-    Linking.openURL("url");
+    if (selectedUser?.html_url) {
+      Linking.openURL(selectedUser.html_url);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -60,70 +72,77 @@ export default function UserProfilePopup({
     });
   };
 
-  const renderUserInfo = (user: any) => (
+  const renderUserInfo = (user: GithubUser) => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Avatar and Basic Info */}
       <View style={styles.headerSection}>
         <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
         <View style={styles.basicInfo}>
-          <Text style={styles.username}>@username</Text>
-          <Text style={styles.name}>name</Text>
-          <Text style={styles.bio}>bio</Text>
+          <Text style={styles.username}>@{user.login}</Text>
+          {user.name && <Text style={styles.name}>{user.name}</Text>}
+          {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
         </View>
       </View>
 
-      {/* Stats */}
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{user.public_repos}</Text>
           <Text style={styles.statLabel}>Repositories</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{user.followers}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{user.following}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>{user.public_gists}</Text>
           <Text style={styles.statLabel}>Gists</Text>
         </View>
       </View>
 
-      {/* Details */}
       <View style={styles.detailsSection}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Company</Text>
-          <Text style={styles.detailValue}>company</Text>
-        </View>
+        {user.company && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Company</Text>
+            <Text style={styles.detailValue}>{user.company}</Text>
+          </View>
+        )}
 
         {user.location && (
           <View style={styles.detailItem}>
             <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>location</Text>
+            <Text style={styles.detailValue}>{user.location}</Text>
+          </View>
+        )}
+
+        {user.blog && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Blog</Text>
+            <Text style={styles.detailValue}>{user.blog}</Text>
+          </View>
+        )}
+
+        {user.twitter_username && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Twitter</Text>
+            <Text style={styles.detailValue}>@{user.twitter_username}</Text>
           </View>
         )}
 
         <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Blog</Text>
-          <Text style={styles.detailValue}>blog</Text>
-        </View>
-
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Twitter</Text>
-          <Text style={styles.detailValue}>@twitter_username</Text>
-        </View>
-
-        <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Member Since</Text>
-          <Text style={styles.detailValue}>08-08-2008</Text>
+          <Text style={styles.detailValue}>
+            {user.created_at ? formatDate(user.created_at) : ""}
+          </Text>
         </View>
 
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Last Updated</Text>
-          <Text style={styles.detailValue}>08-08-2008</Text>
+          <Text style={styles.detailValue}>
+            {user.updated_at ? formatDate(user.updated_at) : ""}
+          </Text>
         </View>
       </View>
     </ScrollView>
@@ -140,7 +159,9 @@ export default function UserProfilePopup({
     <View style={styles.errorContainer}>
       <Text style={styles.errorIcon}>⚠️</Text>
       <Text style={styles.errorTitle}>No Data Found</Text>
-      <Text style={styles.errorMessage}>error</Text>
+      <Text style={styles.errorMessage}>
+        {userError || "Unable to load user information"}
+      </Text>
     </View>
   );
 
@@ -166,25 +187,26 @@ export default function UserProfilePopup({
           ]}
         >
           <View style={styles.header}>
-            <View style={styles.handle} />
             <Text style={styles.title}>User Profile</Text>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* renderLoading()
-          renderError()
-          renderUserInfo(selectedUser) */}
+          {userLoading && renderLoading()}
+          {userError && renderError()}
+          {selectedUser && renderUserInfo(selectedUser)}
 
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={handleOpenProfile}
-            >
-              <Text style={styles.profileButtonText}>View on GitHub</Text>
-            </TouchableOpacity>
-          </View>
+          {selectedUser && (
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={styles.profileButton}
+                onPress={handleOpenProfile}
+              >
+                <Text style={styles.profileButtonText}>View on GitHub</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -214,12 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#ddd",
-    borderRadius: 2,
   },
   title: {
     fontSize: 18,

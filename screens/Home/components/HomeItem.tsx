@@ -1,11 +1,13 @@
+import { GithubRepoItemProps } from "@/apis/models";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface HomeItemProps {
+  repo: GithubRepoItemProps;
   index: number;
   onOwnerPress: (username: string) => void;
 }
 
-export default function HomeItem({ index, onOwnerPress }: HomeItemProps) {
+export default function HomeItem({ repo, index, onOwnerPress }: HomeItemProps) {
   const formatNumber = (num: number) => {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + "k";
@@ -18,29 +20,45 @@ export default function HomeItem({ index, onOwnerPress }: HomeItemProps) {
       <Text style={styles.index}>{index + 1}.</Text>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.repoName}>Name</Text>
+          <Text style={styles.repoName}>{repo.name}</Text>
           <View style={styles.stats}>
-            <Text style={styles.stat}>⭐ 0</Text>
-            <Text style={styles.stat}>🍴 {formatNumber(0)}</Text>
+            <Text style={styles.stat}>
+              ⭐{" "}
+              {repo.stargazers_count ? formatNumber(repo.stargazers_count) : 0}
+            </Text>
+            <Text style={styles.stat}>
+              🍴 {repo.forks_count ? formatNumber(repo.forks_count) : 0}
+            </Text>
           </View>
         </View>
 
-        <Text style={styles.description} numberOfLines={2}>
-          Description
-        </Text>
+        {repo.description && (
+          <Text style={styles.description} numberOfLines={2}>
+            {repo.description}
+          </Text>
+        )}
 
         <View style={styles.footer}>
           <TouchableOpacity
             onPress={() => {
-              onOwnerPress("");
+              {
+                repo?.owner?.login ? onOwnerPress(repo.owner.login) : null;
+              }
             }}
           >
-            <Text style={styles.owner}>👤 Owner</Text>
+            <Text style={styles.owner}>👤 {repo?.owner?.login}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.language}>💻 Language</Text>
+          {repo.language && (
+            <Text style={styles.language}>💻 {repo.language}</Text>
+          )}
 
-          <Text style={styles.updated}>📅 Date</Text>
+          <Text style={styles.updated}>
+            📅{" "}
+            {repo.updated_at
+              ? new Date(repo.updated_at).toLocaleDateString()
+              : ""}
+          </Text>
         </View>
       </View>
     </View>

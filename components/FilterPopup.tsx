@@ -1,17 +1,22 @@
+import {
+  OrderOption,
+  setOrderBy,
+  setSortBy,
+  SortOption,
+} from "@/redux/slices/repoSlice";
+import { RootState } from "@/redux/store";
 import React, { useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
-type SortOption = "stars" | "forks" | "help-wanted-issues" | "updated";
-type OrderOption = "asc" | "desc";
+import { useDispatch, useSelector } from "react-redux";
 
 interface FilterPopupProps {
   visible: boolean;
@@ -49,6 +54,9 @@ const ORDER_OPTIONS: {
 ];
 
 export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
+  const dispatch = useDispatch();
+  const { sortBy, orderBy } = useSelector((state: RootState) => state.repos);
+
   const [slideAnim] = useState(new Animated.Value(screenHeight));
 
   React.useEffect(() => {
@@ -67,16 +75,20 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
     }
   }, [visible, slideAnim]);
 
-  const handleSortChange = (sort: SortOption) => {};
+  const handleSortChange = (sort: SortOption) => {
+    dispatch(setSortBy(sort));
+  };
 
-  const handleOrderChange = (order: OrderOption) => {};
+  const handleOrderChange = (order: OrderOption) => {
+    dispatch(setOrderBy(order));
+  };
 
   const renderSortOption = (option: (typeof SORT_OPTIONS)[0]) => (
     <TouchableOpacity
       key={option.value}
       style={[
         styles.optionItem,
-        // styles.selectedOption,
+        sortBy === option.value && styles.selectedOption,
       ]}
       onPress={() => handleSortChange(option.value)}
     >
@@ -84,7 +96,7 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
         <Text
           style={[
             styles.optionLabel,
-            // styles.selectedOptionText,
+            sortBy === option.value && styles.selectedOptionText,
           ]}
         >
           {option.label}
@@ -92,16 +104,17 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
         <Text
           style={[
             styles.optionDescription,
-            // styles.selectedOptionText,
+            sortBy === option.value && styles.selectedOptionText,
           ]}
         >
           {option.description}
         </Text>
       </View>
-
-      {/* <View style={styles.checkmark}>
-        <Text style={styles.checkmarkText}>✓</Text>
-      </View> */}
+      {sortBy === option.value && (
+        <View style={styles.checkmark}>
+          <Text style={styles.checkmarkText}>✓</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -110,7 +123,7 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
       key={option.value}
       style={[
         styles.optionItem,
-        // styles.selectedOption,
+        orderBy === option.value && styles.selectedOption,
       ]}
       onPress={() => handleOrderChange(option.value)}
     >
@@ -118,7 +131,7 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
         <Text
           style={[
             styles.optionLabel,
-            // styles.selectedOptionText,
+            orderBy === option.value && styles.selectedOptionText,
           ]}
         >
           {option.label}
@@ -126,15 +139,17 @@ export default function FilterPopup({ visible, onClose }: FilterPopupProps) {
         <Text
           style={[
             styles.optionDescription,
-            // styles.selectedOptionText,
+            orderBy === option.value && styles.selectedOptionText,
           ]}
         >
           {option.description}
         </Text>
       </View>
-      {/* <View style={styles.checkmark}>
-        <Text style={styles.checkmarkText}>✓</Text>
-      </View> */}
+      {orderBy === option.value && (
+        <View style={styles.checkmark}>
+          <Text style={styles.checkmarkText}>✓</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
