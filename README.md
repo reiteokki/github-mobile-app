@@ -1,50 +1,63 @@
-# Welcome to your Expo app 👋
+# GitHub App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native application that interacts with GitHub API to display user profiles and repositories. Built with Redux Toolkit, React Native, and React Navigation.
 
-## Get started
+---
 
-1. Install dependencies
+## Table of Contents
 
-   ```bash
-   npm install
-   ```
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [Screenshots / Demo](#screenshots--demo)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## Key Features
 
-In the output, you'll find options to open the app in a
+- **User Profile:** View GitHub user profiles including name, avatar, location, bio, and stats.
+- **Repository Listing:** Fetch and display user repositories with relevant details.
+- **Redux Integration:** Global state management with Redux Toolkit for profile and repository data.
+- **Async Loading & Error Handling:** Loading indicators while fetching data and error messages for failed requests.
+- **Editable Username & Photo:** Update username and local profile photo.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Installation
 
-## Get a fresh project
-
-When you're ready, run:
+1. Clone the repository:
 
 ```bash
-npm run reset-project
+git clone https://github.com/reiteokki/github-mobile-app.git
+cd github-mobile-app
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Running the Application
 
-## Learn more
+1. Run Expo:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+2. Run Test:
 
-## Join the community
+```bash
+npm test
+```
 
-Join our community of developers creating universal apps.
+3. Run Test with coverage:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run test -- --coverage
+```
+
+## Screenshots / Demo
+![Home Screen](assets/screenshots/home.png)
+![Repository Suggestions](assets/screenshots/suggestions.png)
+![Repository Filter Modal](assets/screenshots/filter.png)
+![Repository Detai Modal](assets/screenshots/home-detail.png)
+
+![Profile Screen](assets/screenshots/profile.png)
+![Profile Edit Username Screen](assets/screenshots/profile-edit.png)
+![Profile Edit Image Locally](assets/screenshots/profile-local-image.png)
