@@ -10,9 +10,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  initialWindowMetrics,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import HomeItem from "./components/HomeItem";
 
 export default function Home() {
+  const insets = initialWindowMetrics?.insets ?? useSafeAreaInsets();
+
   const [filterVisible, setFilterVisible] = useState(false);
   const [userProfileVisible, setUserProfileVisible] = useState(false);
   const [selectedUsername, setSelectedUsername] = useState("");
@@ -28,12 +34,14 @@ export default function Home() {
   }, []);
 
   const renderItem = useCallback(
-    ({ index }: { index: number }) => <HomeItem index={index} onOwnerPress={handleOwnerPress} />,
+    ({ index }: { index: number }) => (
+      <HomeItem index={index} onOwnerPress={handleOwnerPress} />
+    ),
     [handleOwnerPress]
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <SearchInput onSearch={() => {}} initialValue={""} />
         <TouchableOpacity

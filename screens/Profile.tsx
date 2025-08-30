@@ -1,19 +1,51 @@
-import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  clearLocalPhoto,
+  setCurrentUsername,
+  setLocalPhoto,
+} from "@/redux/slices/profileSlice";
+import {
+  fetchProfileRequest,
+  setIsEditingUsername,
+} from "@/redux/slices/repoSlice";
+import { RootState } from "@/redux/store";
+import * as ImagePicker from "expo-image-picker";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import {
+  initialWindowMetrics,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Profile() {
-  const [usernameInput, setUsernameInput] = useState("");
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const insets = initialWindowMetrics?.insets ?? useSafeAreaInsets();
+  const dispatch = useDispatch();
+  const { profileUser, profileLoading, profileError, isEditingUsername } =
+    useSelector((state: RootState) => state.repos);
+
+  const { currentUsername, localPhotoUri } = useSelector(
+    (state: RootState) => state.profile
+  );
+
+  const [usernameInput, setUsernameInput] = useState(currentUsername);
+
+  useEffect(() => {
+    dispatch(fetchProfileRequest(currentUsername));
+  }, [dispatch, currentUsername]);
+
+  useEffect(() => {
+    setUsernameInput(currentUsername);
+  }, [currentUsername]);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -37,6 +69,10 @@ export default function Profile() {
       aspect: [1, 1],
       quality: 0.8,
     });
+
+    if (!result.canceled && result.assets[0]) {
+      dispatch(setLocalPhoto(result.assets[0].uri));
+    }
   };
 
   const takePhoto = async () => {
@@ -54,6 +90,10 @@ export default function Profile() {
       aspect: [1, 1],
       quality: 0.8,
     });
+
+    if (!result.canceled && result.assets[0]) {
+      dispatch(setLocalPhoto(result.assets[0].uri));
+    }
   };
 
   const showImagePickerOptions = () => {
@@ -89,19 +129,37 @@ export default function Profile() {
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => ({}),
+          onPress: () => dispatch(clearLocalPhoto()),
         },
       ]
     );
   };
 
-  const handleUsernameEdit = () => {};
+  const handleUsernameEdit = () => {
+    dispatch(setIsEditingUsername(true));
+  };
 
   const handleUsernameSave = () => {
     const trimmedUsername = usernameInput.trim();
+    if (trimmedUsername.length === 0) {
+      Alert.alert("Invalid Username", "Username cannot be empty.");
+      setUsernameInput(currentUsername);
+      return;
+    }
+
+    if (trimmedUsername === currentUsername) {
+      dispatch(setIsEditingUsername(false));
+      return;
+    }
+
+    dispatch(setCurrentUsername(trimmedUsername));
+    dispatch(setIsEditingUsername(false));
   };
 
-  const handleUsernameCancel = () => {};
+  const handleUsernameCancel = () => {
+    setUsernameInput(currentUsername);
+    dispatch(setIsEditingUsername(false));
+  };
 
   const formatNumber = (num: number) => {
     if (num >= 1000) {
@@ -118,22 +176,68 @@ export default function Profile() {
     });
   };
 
+  if (profileLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorTitle}>Profile Not Found</Text>
+        <Text style={styles.errorMessage}>
+          {profileError || "Unable to load profile information"}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!profileUser) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorIcon}>👤</Text>
+        <Text style={styles.errorTitle}>No Profile Data</Text>
+        <Text style={styles.errorMessage}>
+          Profile information is not available
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header Section with Avatar */}
+    <ScrollView
+      style={[styles.container, { paddingTop: insets.top }]}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.headerSection}>
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: "" }} style={styles.avatar} testID="avatar" />
+          <Image
+            source={{ uri: localPhotoUri || profileUser.avatar_url }}
+            style={styles.avatar}
+            testID="avatar"
+          />
           <TouchableOpacity
             style={styles.photoButton}
             onPress={showImagePickerOptions}
           >
             <Text style={styles.photoButtonText}>📷</Text>
           </TouchableOpacity>
+          {localPhotoUri && (
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={removeLocalPhoto}
+            >
+              <Text style={styles.removeButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.basicInfo}>
-          {/* Username Section */}
           <View style={styles.usernameSection}>
             {isEditingUsername ? (
               <View style={styles.usernameEditContainer}>
@@ -164,7 +268,7 @@ export default function Profile() {
               </View>
             ) : (
               <View style={styles.usernameDisplayContainer}>
-                <Text style={styles.username}>@sample</Text>
+                <Text style={styles.username}>@{profileUser.login}</Text>
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={handleUsernameEdit}
@@ -175,65 +279,101 @@ export default function Profile() {
             )}
           </View>
 
-          <Text style={styles.name}>Name</Text>
-          <Text style={styles.bio}>Bio</Text>
+          {profileUser.name && (
+            <Text style={styles.name}>{profileUser.name}</Text>
+          )}
+          {profileUser.bio && <Text style={styles.bio}>{profileUser.bio}</Text>}
         </View>
       </View>
 
-      {/* Stats Section */}
       <View style={styles.statsSection}>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>
+            {profileUser.public_repos
+              ? formatNumber(profileUser.public_repos)
+              : "0"}
+          </Text>
           <Text style={styles.statLabel}>Repositories</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>
+            {profileUser.followers ? formatNumber(profileUser.followers) : "0"}
+          </Text>
           <Text style={styles.statLabel}>Followers</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>
+            {profileUser.following ? formatNumber(profileUser.following) : "0"}
+          </Text>
           <Text style={styles.statLabel}>Following</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statNumber}>0</Text>
+          <Text style={styles.statNumber}>
+            {profileUser.public_gists
+              ? formatNumber(profileUser.public_gists)
+              : "0"}
+          </Text>
           <Text style={styles.statLabel}>Gists</Text>
         </View>
       </View>
 
-      {/* Details Section */}
       <View style={styles.detailsSection}>
         <Text style={styles.sectionTitle}>Profile Information</Text>
 
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>🏢 Company</Text>
-          <Text style={styles.detailValue}>Company</Text>
-        </View>
+        {profileUser.company && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>🏢 Company</Text>
+            <Text style={styles.detailValue}>{profileUser.company}</Text>
+          </View>
+        )}
 
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>📍 Location</Text>
-          <Text style={styles.detailValue}>Location</Text>
-        </View>
+        {profileUser.location && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>📍 Location</Text>
+            <Text style={styles.detailValue}>{profileUser.location}</Text>
+          </View>
+        )}
 
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>🌐 Blog</Text>
-          <Text style={styles.detailValue}>Blog</Text>
-        </View>
+        {profileUser.blog && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>🌐 Blog</Text>
+            <Text style={styles.detailValue}>{profileUser.blog}</Text>
+          </View>
+        )}
 
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>🐦 Twitter</Text>
-          <Text style={styles.detailValue}>@twitter</Text>
-        </View>
+        {profileUser.twitter_username && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>🐦 Twitter</Text>
+            <Text style={styles.detailValue}>
+              @{profileUser.twitter_username}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>📅 Member Since</Text>
-          <Text style={styles.detailValue}>0</Text>
+          <Text style={styles.detailValue}>
+            {profileUser.created_at ? formatDate(profileUser.created_at) : "0"}
+          </Text>
         </View>
 
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>🔄 Last Updated</Text>
-          <Text style={styles.detailValue}>0</Text>
+          <Text style={styles.detailValue}>
+            {profileUser.updated_at ? formatDate(profileUser.updated_at) : "0"}
+          </Text>
         </View>
       </View>
+
+      {localPhotoUri && (
+        <View style={styles.photoInfoSection}>
+          <Text style={styles.photoInfoTitle}>📸 Local Photo</Text>
+          <Text style={styles.photoInfoText}>
+            You've uploaded a local photo that will be displayed instead of your
+            GitHub avatar.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -467,5 +607,24 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "right",
     marginLeft: 16,
+  },
+  photoInfoSection: {
+    backgroundColor: "#e3f2fd",
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2196f3",
+  },
+  photoInfoTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1976d2",
+    marginBottom: 8,
+  },
+  photoInfoText: {
+    fontSize: 14,
+    color: "#1976d2",
+    lineHeight: 20,
   },
 });
