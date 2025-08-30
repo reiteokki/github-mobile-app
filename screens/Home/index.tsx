@@ -14,16 +14,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  initialWindowMetrics,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import HomeItem from "./components/HomeItem";
 
 export default function Home() {
-  const insets = initialWindowMetrics?.insets ?? useSafeAreaInsets();
-
   const dispatch = useDispatch();
   const [filterVisible, setFilterVisible] = useState(false);
   const [userProfileVisible, setUserProfileVisible] = useState(false);
@@ -120,7 +114,7 @@ export default function Home() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <SearchInput onSearch={handleSearch} initialValue={searchQuery} />
         <TouchableOpacity

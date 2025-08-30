@@ -21,14 +21,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  initialWindowMetrics,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 
+export const formatNumber = (num: number) => {
+  if (num >= 1000) return (num / 1000).toFixed(1) + "k";
+  return num.toString();
+};
+
+export const formatDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
 export default function Profile() {
-  const insets = initialWindowMetrics?.insets ?? useSafeAreaInsets();
   const dispatch = useDispatch();
   const { profileUser, profileLoading, profileError, isEditingUsername } =
     useSelector((state: RootState) => state.repos);
@@ -161,21 +168,6 @@ export default function Profile() {
     dispatch(setIsEditingUsername(false));
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + "k";
-    }
-    return num.toString();
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   if (profileLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -210,10 +202,7 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.headerSection}>
         <View style={styles.avatarContainer}>
           <Image
